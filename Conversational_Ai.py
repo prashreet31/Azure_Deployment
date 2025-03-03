@@ -1,72 +1,74 @@
-import openai #for GPT-based chatbot functionality
-import argparse  # Import argparse for command-line argument parsing
-import base64  # Import base64 for encoding image files
-from flask import Flask, request, jsonify, render_template  # Import Flask for web application
-from flask_cors import CORS  # Import CORS for handling cross-origin requests
-import fitz  # PyMuPDF - Library for handling PDFs
-from io import BytesIO  # Import BytesIO for handling binary file operations
-from langchain.memory import ConversationBufferMemory  # Import memory buffer for conversation history
-from langchain.schema import HumanMessage, AIMessage  # Import message schema from LangChain
-import logging  # Import logging for debugging and information logging
+import openai
+import argparse
+import base64
+import os
+from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import fitz
+from io import BytesIO
+from langchain.memory import ConversationBufferMemory
+from langchain.schema import HumanMessage, AIMessage
+import logging
 
-# Setting OpenAI API key (This should be securely stored in an environment variable in production)
-OPENAI_API_KEY = "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"
-openai.api_key = OPENAI_API_KEY  # Assign API key to OpenAI client
+# Load Azure OpenAI credentials from environment variables
+AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+AZURE_DEPLOYMENT_NAME = os.getenv("AZURE_DEPLOYMENT_NAME")
+
+if not AZURE_OPENAI_API_KEY or not AZURE_OPENAI_ENDPOINT or not AZURE_DEPLOYMENT_NAME:
+    raise ValueError("Azure OpenAI API Key, Endpoint, or Deployment Name not set.")
+
+openai.api_type = "azure"
+openai.api_base = AZURE_OPENAI_ENDPOINT
+openai.api_version = "2023-03-15-preview"
+openai.api_key = AZURE_OPENAI_API_KEY
 
 # Initialize Flask application
-app = Flask(__name__)  # Create Flask instance
-CORS(app, resources={r"/*": {"origins": "*"}})  
-# Enable CORS to allow cross-origin requests
+app = Flask(__name__)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Initialize global conversation memory
-memory = ConversationBufferMemory(return_messages=True)  # Store conversation history
+memory = ConversationBufferMemory(return_messages=True)
 
-# Setup logging for debugging
-logging.basicConfig(level=logging.INFO)  # Configure logging level to INFO
-logger = logging.getLogger(__name__)  # Create logger instance
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 def extract_text_from_pdf(pdf_file):
-    """Extracts text content from a given PDF file using PyMuPDF (fitz)."""
     try:
-        pdf_document = fitz.open(stream=pdf_file.read(), filetype="pdf")  # Open PDF file from binary stream
-        text = "\n".join([page.get_text("text") for page in pdf_document])  # Extract text from each page
-        return text  # Return extracted text
+        pdf_document = fitz.open(stream=pdf_file.read(), filetype="pdf")
+        text = "\n".join([page.get_text("text") for page in pdf_document])
+        return text
     except Exception as e:
-        return f"Error extracting text from PDF: {str(e)}"  # Return error message if extraction fails
+        return f"Error extracting text from PDF: {str(e)}"
 
 def moderate_content(response_text):
-    """Moderates AI-generated content to filter inappropriate words."""
-    prohibited_words = ["hate speech", "violence", "discrimination"]  # List of prohibited words
+    prohibited_words = ["hate speech", "violence", "discrimination"]
     for word in prohibited_words:
-        if word in response_text.lower():  # Check if response contains prohibited words
-            return "I'm sorry, but I can't provide a response to that request."  # Return a filtered response
-    return response_text  # Return response if no prohibited words are found
+        if word in response_text.lower():
+            return "I'm sorry, but I can't provide a response to that request."
+    return response_text
 
 def chat_with_gpt4(user_input, image_file=None, pdf_file=None):
-    """Handles user input, including text, images, and PDFs, and interacts with GPT-4-Turbo."""
     try:
-        pdf_text = None  # Initialize PDF text variable
-        image_data = None  # Initialize image data variable
+        pdf_text = None
+        image_data = None
 
         if pdf_file:
-            pdf_text = extract_text_from_pdf(pdf_file)  # Extract text from PDF
-            if pdf_text.startswith("Error"):  # If extraction fails, return error message
+            pdf_text = extract_text_from_pdf(pdf_file)
+            if pdf_text.startswith("Error"):
                 return pdf_text
         elif image_file:
-            image_data = base64.b64encode(image_file.read()).decode("utf-8")  # Encode image as base64
-        
-        # Load past conversation history from memory
+            image_data = base64.b64encode(image_file.read()).decode("utf-8")
+
         history = memory.load_memory_variables({})["history"]
-        
-        # Convert history into OpenAI API format
         messages = [{"role": "system", "content": "You are an AI assistant that remembers past conversations."}]
         for message in history:
             if isinstance(message, HumanMessage):
-                messages.append({"role": "user", "content": message.content})  # Add user messages
+                messages.append({"role": "user", "content": message.content})
             elif isinstance(message, AIMessage):
-                messages.append({"role": "assistant", "content": message.content})  # Add AI messages
+                messages.append({"role": "assistant", "content": message.content})
         
-        # Add current user input
         if user_input:
             messages.append({"role": "user", "content": user_input})
         if pdf_text:
@@ -74,60 +76,55 @@ def chat_with_gpt4(user_input, image_file=None, pdf_file=None):
         elif image_data:
             messages.append({"role": "user", "content": [{"type": "text", "text": user_input or "Describe the image."},
                                                               {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{image_data}"}}]})
-        
-        # Query OpenAI API
+
         response = openai.ChatCompletion.create(
-            model="gpt-4-turbo",
+            engine=AZURE_DEPLOYMENT_NAME,
             messages=messages,
             max_tokens=350,
             temperature=0.7
         )
         
-        # Extract AI response
         gpt_response = response["choices"][0]["message"]["content"].strip()
-        
-        # Save conversation history
         memory.save_context({"input": user_input or "[File Sent]"}, {"output": gpt_response})
         
-        return moderate_content(gpt_response)  # Return moderated AI response
+        return moderate_content(gpt_response)
     except Exception as e:
-        return f"Error: {str(e)}"  # Return error message if processing fails
+        return f"Error: {str(e)}"
 
-# Define web routes
 @app.route('/')
 def index():
-    return render_template('index.html')  # Render HTML template
+    return render_template('index.html')
 
 @app.route('/chat', methods=['POST'])
 def chat_api():
-    """Handles chat API requests."""
-    data = request.form  # Get form data
-    user_input = data.get("input")  # Extract user input
-    image_file = request.files.get("image")  # Extract uploaded image
-    pdf_file = request.files.get("pdf")  # Extract uploaded PDF
+    data = request.form
+    user_input = data.get("input")
+    image_file = request.files.get("image")
+    pdf_file = request.files.get("pdf")
     
-    if not user_input and not image_file and not pdf_file:  # Check if input is empty
+    if not user_input and not image_file and not pdf_file:
         return jsonify({"error": "No input, image, or PDF provided!"}), 400
 
-    response = chat_with_gpt4(user_input, image_file=image_file, pdf_file=pdf_file)  # Process input
-    return jsonify({"response": response})  # Return AI response
+    response = chat_with_gpt4(user_input, image_file=image_file, pdf_file=pdf_file)
+    return jsonify({"response": response})
 
 @app.route('/reset', methods=['POST'])
 def reset_memory():
-    """Resets conversation memory."""
-    memory.clear()  # Clear stored conversation history
-    return jsonify({"message": "Memory reset successfully."})  # Confirm reset
+    memory.clear()
+    return jsonify({"message": "Memory reset successfully."})
 
-# Run chatbot application
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run the chatbot as CLI or Web API")
     parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli (default) or web")
     args, unknown = parser.parse_known_args()
     
+    port = int(os.getenv("PORT", 5000))
+    
     if args.mode == "cli":
         print("\nCLI mode is not supported with global memory. Please use web mode.\nUse: python Conversational_Ai.py --mode web\n")
     else:
-        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)  # Start Flask server
+        app.run(host="0.0.0.0", port=port)
+
 
 
 

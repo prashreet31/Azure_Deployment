@@ -70,6 +70,8 @@
         </div>
     </div>
     <script>
+    const API_BASE_URL = "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net/"; // Update this with your actual Azure Web App URL
+    
     document.getElementById('fileInput').addEventListener('change', function() {
         let fileName = this.files[0] ? this.files[0].name : "No file chosen";
         document.getElementById('fileName').textContent = fileName;
@@ -91,7 +93,7 @@
         document.getElementById("fileInput").value = "";
         document.getElementById("fileName").textContent = "No file chosen";
         try {
-            const response = await fetch("https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net/chat", { method: "POST", body: formData });
+            const response = await fetch(`${API_BASE_URL}/chat`, { method: "POST", body: formData });
             const data = await response.json();
             chatBox.innerHTML += `<p><strong>AI:</strong> ${data.response}</p>`;
         } catch (error) {
@@ -101,7 +103,7 @@
     }
     async function resetSession() {
         try {
-            await fetch("https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net/reset", { method: "POST" });
+            await fetch(`${API_BASE_URL}/reset`, { method: "POST" });
             alert("Session reset.");
         } catch (error) {
             alert("Error resetting session.");
