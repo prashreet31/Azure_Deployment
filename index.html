@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 50%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+        .chat-box {
+            border: 1px solid #ccc;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 5px;
+        }
+        .input-box {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button {
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .file-upload {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h2>Chat with AI</h2>
+        <div class="chat-box" id="chatBox"></div>
+        <div class="input-box">
+            <input type="text" id="userInput" placeholder="Type a message...">
+            <div class="file-upload">
+                <button onclick="document.getElementById('fileInput').click();">Choose File</button>
+                <input type="file" id="fileInput" accept="image/*,application/pdf" style="display: none;">
+                <span id="fileName">No file chosen</span>
+            </div>
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="resetSession()" style="background-color: #dc3545;">Reset</button>
+        </div>
+    </div>
+    <script>
+    document.getElementById('fileInput').addEventListener('change', function() {
+        let fileName = this.files[0] ? this.files[0].name : "No file chosen";
+        document.getElementById('fileName').textContent = fileName;
+    });
+
+    async function sendMessage() {
+        const chatBox = document.getElementById("chatBox");
+        const userInput = document.getElementById("userInput").value.trim();
+        const file = document.getElementById("fileInput").files[0];
+        if (!userInput && !file) {
+            alert("Please enter a message or upload a file.");
+            return;
+        }
+        let formData = new FormData();
+        formData.append("input", userInput);
+        if (file) formData.append(file.type.includes("pdf") ? "pdf" : "image", file);
+        chatBox.innerHTML += `<p><strong>You:</strong> ${userInput || "[File Sent]"}</p>`;
+        document.getElementById("userInput").value = "";
+        document.getElementById("fileInput").value = "";
+        document.getElementById("fileName").textContent = "No file chosen";
+        try {
+            const response = await fetch("http://127.0.0.1:5000/chat", { method: "POST", body: formData });
+            const data = await response.json();
+            chatBox.innerHTML += `<p><strong>AI:</strong> ${data.response}</p>`;
+        } catch (error) {
+            chatBox.innerHTML += `<p><strong>Error:</strong> Could not connect to the server.</p>`;
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+    async function resetSession() {
+        try {
+            await fetch("http://127.0.0.1:5000/reset", { method: "POST" });
+            alert("Session reset.");
+        } catch (error) {
+            alert("Error resetting session.");
+        }
+    }
+</script>
+</body>
+</html>
+
+
+ 
