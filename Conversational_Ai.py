@@ -33,7 +33,7 @@ app = Flask(__name__)
 CORS(app, resources={
     r"/*": {
         "origins": [
-            "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net",
+            "prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net",
           ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
