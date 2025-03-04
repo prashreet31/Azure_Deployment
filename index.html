@@ -70,8 +70,7 @@
         </div>
     </div>
     <script>
-    // Remove trailing slash to avoid double-slash issues
-    const API_BASE_URL = "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net"; 
+    const API_BASE_URL = "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net"; // Update this with your actual Azure Web App URL
     
     document.getElementById('fileInput').addEventListener('change', function() {
         let fileName = this.files[0] ? this.files[0].name : "No file chosen";
@@ -86,94 +85,31 @@
             alert("Please enter a message or upload a file.");
             return;
         }
-        
-        // Show sending status
+        let formData = new FormData();
+        formData.append("input", userInput);
+        if (file) formData.append(file.type.includes("pdf") ? "pdf" : "image", file);
         chatBox.innerHTML += `<p><strong>You:</strong> ${userInput || "[File Sent]"}</p>`;
-        chatBox.innerHTML += `<p id="loading"><em>AI is thinking...</em></p>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-        
-        // Clear input fields
         document.getElementById("userInput").value = "";
         document.getElementById("fileInput").value = "";
         document.getElementById("fileName").textContent = "No file chosen";
-        
-        let formData = new FormData();
-        formData.append("input", userInput || "");
-        if (file) {
-            formData.append(file.type.includes("pdf") ? "pdf" : "image", file);
-        }
-        
         try {
-            console.log("Sending request to:", `${API_BASE_URL}/chat`);
-            const response = await fetch(`${API_BASE_URL}/chat`, { 
-                method: "POST", 
-                body: formData,
-                // Explicitly don't set Content-Type header as FormData sets it with boundary
-                headers: {},
-                // Include credentials for cookies if needed
-                credentials: "include" 
-            });
-            
-            // Remove loading message
-            const loadingElem = document.getElementById("loading");
-            if (loadingElem) loadingElem.remove();
-            
-            if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-            }
-            
+            const response = await fetch(`${API_BASE_URL}/chat`, { method: "POST", body: formData });
             const data = await response.json();
             chatBox.innerHTML += `<p><strong>AI:</strong> ${data.response}</p>`;
         } catch (error) {
-            // Remove loading message
-            const loadingElem = document.getElementById("loading");
-            if (loadingElem) loadingElem.remove();
-            
-            console.error("Error:", error);
-            chatBox.innerHTML += `<p><strong>Error:</strong> Could not connect to the server. Details: ${error.message}</p>`;
+            chatBox.innerHTML += `<p><strong>Error:</strong> Could not connect to the server.</p>`;
         }
-        
         chatBox.scrollTop = chatBox.scrollHeight;
     }
-    
     async function resetSession() {
         try {
-            const response = await fetch(`${API_BASE_URL}/reset`, { 
-                method: "POST",
-                credentials: "include"
-            });
-            
-            if (!response.ok) {
-                throw new Error(`Server responded with ${response.status}: ${response.statusText}`);
-            }
-            
-            const data = await response.json();
-            alert(data.message || "Session reset successfully.");
-            document.getElementById("chatBox").innerHTML = "";
+            await fetch(`${API_BASE_URL}/reset`, { method: "POST" });
+            alert("Session reset.");
         } catch (error) {
-            console.error("Error resetting session:", error);
-            alert(`Error resetting session: ${error.message}`);
+            alert("Error resetting session.");
         }
     }
-    
-    // Add an initialization check
-    window.addEventListener('load', async function() {
-        try {
-            // Optional: Check if backend is available
-            const response = await fetch(`${API_BASE_URL}/`, {
-                method: "GET",
-                credentials: "include"
-            });
-            
-            if (response.ok) {
-                document.getElementById("chatBox").innerHTML = "<p><em>Connected to AI service. Start a conversation!</em></p>";
-            }
-        } catch (error) {
-            console.error("Failed to connect to backend:", error);
-            document.getElementById("chatBox").innerHTML = "<p><strong>Error:</strong> Could not connect to the AI service. Please check your connection.</p>";
-        }
-    });
-    </script>
+</script>
 </body>
 </html>
 
