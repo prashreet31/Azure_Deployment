@@ -34,9 +34,7 @@ CORS(app, resources={
     r"/*": {
         "origins": [
             "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net",
-            "http://127.0.0.1:5000",  # For local development
-            "*"  # Fallback for now - remove in production
-        ],
+          ],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
