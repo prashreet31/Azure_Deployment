@@ -161,7 +161,7 @@ if __name__ == '__main__':
     parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli or web")
     args, unknown = parser.parse_known_args()
     
-    port = int(os.environ.get("PORT", 5000))
+    port = int(os.environ.get("PORT", 8000))
     
     if args.mode == "cli":
         print("\nCLI mode is not supported with global memory. Please use web mode.\nUse: python Conversational_Ai.py --mode web\n")
