@@ -11,7 +11,7 @@ from langchain.schema import HumanMessage, AIMessage
 import logging
 from dotenv import load_dotenv
 
-#load_dotenv()
+load_dotenv()
 
 # Load Azure OpenAI credentials from environment variables
 AZURE_OPENAI_API_KEY = "58EiaI9j6BX6VitjblauiH5LSAJyCxMrzKA1XKhgVrF49M5qrODmJQQJ99BCACYeBjFXJ3w3AAABACOGRUrq"
