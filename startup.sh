@@ -1,2 +1,2 @@
 #!/bin/bash
-gunicorn -b 0.0.0.0:$PORT Conversational_Ai:app
+gunicorn -b 0.0.0.0:8000 Conversational_Ai:app

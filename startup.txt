@@ -1,1 +1,1 @@
-gunicorn --bind=0.0.0.0$PORT --timeout 600 Conversational_Ai:app
+gunicorn --bind=0.0.0.0:8000 --timeout 600 Conversational_Ai:app
