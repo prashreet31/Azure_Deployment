@@ -32,7 +32,7 @@ app = Flask(__name__)
 # Configure CORS more specifically for production
 CORS(app, resources={
     r"/*": {
-        "origins": ["*"],
+        "origins": ["*", "http://127.0.0.1:5000"],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -109,6 +109,33 @@ def chat_with_gpt4(user_input, image_file=None, pdf_file=None):
         logger.error(f"Error in chat_with_gpt4: {str(e)}")
         return f"Error: {str(e)}"
 
+
+def command_line_chatbot():
+    """
+    Runs a command-line chatbot that interacts with the user.
+    """
+    print("AI Assistant: Hello! How can I assist you today? (Type 'exit' to quit or 'upload image' to send an image)")
+    while True:
+        user_input = input("You: ")
+        if user_input.lower() in ["exit", "quit", "bye"]:
+            print("AI Assistant: Goodbye!")
+            break
+        
+        if user_input.lower() == "upload image":
+            image_path = input("Enter the path to the image: ")
+            try:
+                with open(image_path, "rb") as image_file:
+                    image_data = base64.b64encode(image_file.read()).decode('utf-8')
+                ai_response = chat_with_gpt4("", image_data)
+            except Exception as e:
+                print(f"Error: {str(e)}")
+                continue
+        else:
+            ai_response = chat_with_gpt4(user_input)
+        
+        print(f"AI Assistant: {ai_response}")
+
+
 @app.route('/')
 def index():
     return render_template('index.html')
@@ -165,4 +192,15 @@ if __name__ == '__main__':
         # For production in Azure, use the host and port that Azure provides
         host = os.environ.get("HOST", "0.0.0.0")
         app.run(host=host, port=port)
+
+
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser(description="Run the chatbot as CLI or Web API")
+#     parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli (default) or web")
+#     args, unknown = parser.parse_known_args()
+    
+#     if args.mode == "cli":
+#         command_line_chatbot()
+#     else:
+#         app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
 
