@@ -32,9 +32,7 @@ app = Flask(__name__)
 # Configure CORS more specifically for production
 CORS(app, resources={
     r"/*": {
-        "origins": [
-            "prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net",
-          ],
+        "origins": ["*"],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
