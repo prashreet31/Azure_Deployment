@@ -32,7 +32,7 @@ app = Flask(__name__)
 # Configure CORS more specifically for production
 CORS(app, resources={
     r"/*": {
-        "origins": ["*", "http://127.0.0.1:5000"],
+        "origins": ["*", "http://127.0.0.1:5000", "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net"],
         "methods": ["GET", "POST", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"]
     }
@@ -193,14 +193,4 @@ if __name__ == '__main__':
         host = os.environ.get("HOST", "0.0.0.0")
         app.run(host=host, port=port)
 
-
-# if __name__ == '__main__':
-#     parser = argparse.ArgumentParser(description="Run the chatbot as CLI or Web API")
-#     parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli (default) or web")
-#     args, unknown = parser.parse_known_args()
-    
-#     if args.mode == "cli":
-#         command_line_chatbot()
-#     else:
-#         app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)
 
