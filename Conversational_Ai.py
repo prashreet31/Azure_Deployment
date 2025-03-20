@@ -32,9 +32,8 @@ app = Flask(__name__)
 # Configure CORS more specifically for production
 CORS(app, resources={
     r"/*": {
-        "origins": ["*", "http://127.0.0.1:5000", "https://prashchatbot-e0a4d6cjekfxgkbe.centralus-01.azurewebsites.net"],
-        "methods": ["GET", "POST", "OPTIONS"],
-        "allow_headers": ["Content-Type", "Authorization"]
+        "origins": ["*"],
+        "methods": ["GET", "POST", "OPTIONS"]
     }
 })
 
@@ -179,18 +178,27 @@ def reset_memory():
         logger.error(f"Error in reset_memory: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
+# if __name__ == '__main__':
+#     parser = argparse.ArgumentParser(description="Run the chatbot as CLI or Web API")
+#     parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli or web")
+#     args, unknown = parser.parse_known_args()
+    
+#     port = int(os.environ.get("PORT", 8000))
+    
+#     if args.mode == "cli":
+#         print("\nCLI mode is not supported with global memory. Please use web mode.\nUse: python Conversational_Ai.py --mode web\n")
+#     else:
+#         # For production in Azure, use the host and port that Azure provides
+#         host = os.environ.get("HOST", "0.0.0.0")
+#         app.run(host=host, port=port)
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Run the chatbot as CLI or Web API")
-    parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli or web")
+    parser.add_argument("--mode", choices=["cli", "web"], default="web", help="Run mode: cli (default) or web")
     args, unknown = parser.parse_known_args()
-    
-    port = int(os.environ.get("PORT", 8000))
     
     if args.mode == "cli":
         print("\nCLI mode is not supported with global memory. Please use web mode.\nUse: python Conversational_Ai.py --mode web\n")
     else:
-        # For production in Azure, use the host and port that Azure provides
-        host = os.environ.get("HOST", "0.0.0.0")
-        app.run(host=host, port=port)
+        app.run(host="0.0.0.0", port=5000, debug=True, use_reloader=False)  # Start Flask server
 
 
